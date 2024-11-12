@@ -1,5 +1,6 @@
 import random
 import numpy as np
+import matplotlib.pyplot as plt  # Importa Matplotlib para graficar
 from tkinter import PhotoImage
 
 class Hormiga:
@@ -7,8 +8,7 @@ class Hormiga:
         # Atributos de la hormiga
         self.name = "hormiga"
         self.canvas = canvas
-        # Posición inicial como vector columna
-        self.posicion = np.array([[x], [y]])
+        self.posicion = np.array([[x], [y]])  # Posición inicial
         self.salud = 100
         self.nivel_alcohol = 0
         self.puntos = 0
@@ -17,6 +17,7 @@ class Hormiga:
         self.historial_movimientos = []
         self.secuencia_movimientos = self.inicializar_movimiento()
         self.umbral_mejora = 5
+        self.puntajes_generacionales = []  # Lista para almacenar los mejores puntajes por generación
 
     # Inicialización de secuencias de movimiento
     def inicializar_movimiento(self):
@@ -27,7 +28,6 @@ class Hormiga:
 
     # Método para mover la hormiga en el laberinto
     def mover(self, direccion, laberinto):
-        # Matriz de desplazamientos para cada dirección
         movimientos = {
             "arriba": np.array([[0], [-1]]),
             "abajo": np.array([[0], [1]]),
@@ -38,8 +38,6 @@ class Hormiga:
         if direccion in movimientos:
             desplazamiento = movimientos[direccion]
             nueva_posicion = self.posicion + desplazamiento
-
-            # Convertimos la posición en enteros para usar en el laberinto
             nueva_x, nueva_y = int(nueva_posicion[0][0]), int(nueva_posicion[1][0])
             
             if laberinto.es_posicion_valida(nueva_x, nueva_y):
@@ -76,7 +74,7 @@ class Hormiga:
                 puntos += 1
         return puntos
 
-    # Métodos para guardar y cargar las mejores secuencias, y el algoritmo genético adaptativo
+    # Guardar y cargar mejores secuencias, y el algoritmo genético adaptativo
     def guardar_mejores_secuencias(self, archivo="mejores_secuencias.txt"):
         with open(archivo, "w") as file:
             for movimiento in self.historial_movimientos:
@@ -103,6 +101,10 @@ class Hormiga:
             puntuaciones = [(self.evaluar_secuencia(sec, laberinto), sec) for sec in poblacion]
             puntuaciones.sort(reverse=True, key=lambda x: x[0])
 
+            # Guardar el mejor puntaje de esta generación
+            mejor_puntaje = puntuaciones[0][0]
+            self.puntajes_generacionales.append(mejor_puntaje)  # Agrega el mejor puntaje de cada generación
+           
             if puntuaciones[0][0] < self.umbral_mejora:
                 nueva_poblacion = [self.mutar_secuencia(sec) for _, sec in puntuaciones]
             else:
@@ -122,6 +124,7 @@ class Hormiga:
         secuencia[random.randint(0, len(secuencia) - 1)] = random.choice(["arriba", "abajo", "izquierda", "derecha"])
         return secuencia
 
+    # Registrar estadísticas de generación y analizar progreso
     def registrar_estadisticas(self, generacion, archivo="estadisticas_simulacion.txt"):
         with open(archivo, "a") as file:
             file.write(f"Generación: {generacion}, Puntaje: {self.puntos}, Salud: {self.salud}, Movimientos: {self.historial_movimientos}\n")
@@ -138,4 +141,12 @@ class Hormiga:
                 return True
         except FileNotFoundError:
             pass
-        return False
+
+    # Método para graficar los puntajes generacionales
+    def graficar_puntajes(self):
+        plt.plot(self.puntajes_generacionales, marker='o')
+        plt.title("Evolución de los Puntajes en Generaciones")
+        plt.xlabel("Generación")
+        plt.ylabel("Puntaje")
+        plt.show()
+
